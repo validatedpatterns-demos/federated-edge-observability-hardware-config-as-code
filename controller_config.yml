@@ -89,12 +89,23 @@ controller_inventories:
   - name: Federated Edge Observability Inventory
     organization: Federated Edge Observability
 
+  - name: Automation Mesh Inventory
+    organization: Federated Edge Observability
+
 controller_inventory_sources:
   - name: Federated Edge Observability Static Inventory
     inventory: Federated Edge Observability Inventory
     organization: Federated Edge Observability
     source: scm
     source_project: Federated Edge Observability Inventory
+    source_path: inventory
+    update_on_launch: true
+
+  - name: Automation Mesh Static Inventory
+    inventory: Auotmation Mesh Inventory
+    organization: Federated Edge Observability
+    source: scm
+    source_project: Automation Mesh Static Inventory
     source_path: inventory
     update_on_launch: true
 
