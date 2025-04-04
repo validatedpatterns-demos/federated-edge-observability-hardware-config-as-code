@@ -48,7 +48,7 @@ controller_projects:
     wait: true
     update_project: true
 
-  - name: Automation Mesh Static Inventory
+  - name: Automation Mesh Inventory
     organization: Federated Edge Observability
     scm_branch: main
     scm_clean: "no"
