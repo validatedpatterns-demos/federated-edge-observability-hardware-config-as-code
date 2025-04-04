@@ -102,7 +102,7 @@ controller_inventory_sources:
     update_on_launch: true
 
   - name: Automation Mesh Static Inventory
-    inventory: Auotmation Mesh Inventory
+    inventory: Automation Mesh Inventory
     organization: Federated Edge Observability
     source: scm
     source_project: Automation Mesh Inventory
