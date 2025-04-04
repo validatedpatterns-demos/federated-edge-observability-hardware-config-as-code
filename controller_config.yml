@@ -254,7 +254,7 @@ controller_credentials:
     credential_type: Machine
 
 controller_instances:
-  - hostname: rhel9-vpn-001.edge-gitops-vms.svc
+  - hostname: "{{ helm_values.automation_mesh_node | default('rhel9-vpn-001.edge-gitops-vms.svc') }}"
     node_type: execution
     listener_port: 27199
     peers_from_control_nodes: true
