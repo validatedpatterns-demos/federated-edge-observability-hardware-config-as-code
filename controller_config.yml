@@ -77,8 +77,6 @@ controller_inventories:
     kind: smart
     host_filter: name__icontains=vpn
     inventory: Automation Mesh Static Inventory
-    variables:
-      otel_collector_cluster_domain: "{{ helm_values.global.localClusterDomain | default('example.com') }}"
 
   - name: Edge Nodes
     organization: Federated Edge Observability
@@ -254,3 +252,11 @@ controller_credentials:
     description: Machine credential for virtual machines
     organization: Federated Edge Observability
     credential_type: Machine
+
+controller_instances:
+  - hostname: rhel9-vpn-001.edge-gitops-vms.svc
+    node_type: execution
+    listener_port: 27199
+    peers_from_control_nodes: true
+    enabled: true
+    managed_by_policy: true
