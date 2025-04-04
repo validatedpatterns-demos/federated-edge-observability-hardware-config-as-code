@@ -37,14 +37,49 @@ controller_projects:
     wait: true
     update_project: true
 
+  - name: Automation Mesh GitOps
+    organization: Federated Edge Observability
+    scm_branch: main
+    scm_clean: "no"
+    scm_delete_on_update: "no"
+    scm_type: git
+    scm_update_on_launch: "yes"
+    scm_url: https://github.com/validatedpatterns-demos/rhvp.automation_mesh_vpn.git
+    wait: true
+    update_project: true
+
+  - name: Automation Mesh Static Inventory
+    organization: Federated Edge Observability
+    scm_branch: main
+    scm_clean: "no"
+    scm_delete_on_update: "no"
+    scm_type: git
+    scm_update_on_launch: "yes"
+    scm_url: https://github.com/validatedpatterns-demos/validatedpatterns-mesh-vpn-inventory.git
+    wait: true
+    update_project: true
+
 controller_schedules:
   - name: OTEL Playbook
     organization: Federated Edge Observability
     unified_job_template: OTEL Playbook
     rrule: DTSTART:20191219T130500Z RRULE:FREQ=MINUTELY;INTERVAL=10
 
+  - name: Mesh Setup Playbook
+    organization: Federated Edge Observability
+    unified_job_template: Mesh Setup Playbook
+    rrule: DTSTART:20191219T130500Z RRULE:FREQ=MINUTELY;INTERVAL=10
+
 # This is an example of how to pass Helm variables to the IAC config
 controller_inventories:
+  - name: Mesh Nodes
+    organization: Federated Edge Observability
+    kind: smart
+    host_filter: name__icontains=vpn
+    inventory: Automation Mesh Static Inventory
+    variables:
+      otel_collector_cluster_domain: "{{ helm_values.global.localClusterDomain | default('example.com') }}"
+
   - name: Edge Nodes
     organization: Federated Edge Observability
     kind: smart
@@ -87,6 +122,38 @@ controller_credential_types:
         rhsm_username: "{  { username }}"
         rhsm_password: "{  { password }}"
 
+  - name: AAPCredential
+    description: AAP Credentials
+    kind: cloud
+    inputs:
+      fields:
+        - id: aap_hostname
+          type: string
+          label: AAP Hostname
+          secret: false
+        - id: aap_username
+          type: string
+          label: AAP Username
+          secret: true
+        - id: aap_password
+          type: string
+          label: AAP Password
+          secret: true
+        - id: aap_validate_certs
+          type: boolean
+          label: AAP Flag to validate certs
+      required:
+        - aap_hostname
+        - aap_username
+        - aap_password
+        - aap_validate_certs
+    injectors:
+      extra_vars:
+        aap_hostname: "{  { aap_hostname }}"
+        aap_username: "{  { aap_username }}"
+        aap_password: "{  { aap_password }}"
+        aap_validate_certs: "{  { aap_password }}"
+
 controller_templates:
   - name: Demo Job Template
     state: absent
@@ -110,6 +177,18 @@ controller_templates:
     credentials:
       - vm-private-key
       - rhsm_credential
+    execution_environment: Default execution environment
+
+  - name: Mesh Setup Playbook
+    organization: Federated Edge Observability
+    project: Automation Mesh GitOps
+    job_type: run
+    playbook: playbooks/mesh_node_install.yml
+    inventory: Mesh Nodes
+    credentials:
+      - vm-private-key
+      - rhsm_credential
+      - aap
     execution_environment: Default execution environment
 
 controller_credential_input_sources:
@@ -155,6 +234,16 @@ controller_credentials:
       token: "{{ secrets['vault_root_token'] }}"
       cacert: "{{ secrets['vault_ca'] }}"
       api_version: v2
+
+  - name: aap
+    description: AAP Access Credentials
+    organization: Federated Edge Observability
+    credential_type: AAPCredential
+    inputs:
+      aap_hostname: "{{ aap_hostname }}"
+      aap_username: "{{ aap_username | default('admin') }}"
+      aap_password: "{{ aap_password }}"
+      aap_validate_certs: "{{ aap_validate_certs }}"
 
   - name: rhsm_credential
     description: RHSM credential registering RHEL VMs
