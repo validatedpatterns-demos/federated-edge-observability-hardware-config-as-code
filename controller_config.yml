@@ -1,0 +1,167 @@
+# vim: ft=yaml.ansible
+---
+aap_organizations:
+  - name: Federated Edge Observability
+    galaxy_credentials: Ansible Galaxy
+
+controller_settings:
+  - name: AWX_COLLECTIONS_ENABLED
+    value: true
+
+  - name: AWX_ROLES_ENABLED
+    value: true
+
+controller_projects:
+  - name: Demo Project
+    state: absent
+
+  - name: Federated Edge Observability GitOps
+    organization: Federated Edge Observability
+    scm_branch: main
+    scm_clean: "no"
+    scm_delete_on_update: "no"
+    scm_type: git
+    scm_update_on_launch: "yes"
+    scm_url: https://github.com/validatedpatterns-demos/rhvp.federated_edge_observability.git
+    wait: true
+    update_project: true
+
+  - name: Federated Edge Observability Inventory
+    organization: Federated Edge Observability
+    scm_branch: main
+    scm_clean: "no"
+    scm_delete_on_update: "no"
+    scm_type: git
+    scm_update_on_launch: "yes"
+    scm_url: https://github.com/validatedpatterns-demos/federated-edge-observability-inventory.git
+    wait: true
+    update_project: true
+
+controller_schedules:
+  - name: OTEL Playbook
+    organization: Federated Edge Observability
+    unified_job_template: OTEL Playbook
+    rrule: DTSTART:20191219T130500Z RRULE:FREQ=MINUTELY;INTERVAL=10
+
+# This is an example of how to pass Helm variables to the IAC config
+controller_inventories:
+  - name: Edge Nodes
+    organization: Federated Edge Observability
+    kind: smart
+    host_filter: name__icontains=edgenode
+    inventory: Federated Edge Observability Static Inventory
+    variables:
+      otel_collector_cluster_domain: "{{ helm_values.global.localClusterDomain | default('example.com') }}"
+
+  - name: Federated Edge Observability Inventory
+    organization: Federated Edge Observability
+
+controller_inventory_sources:
+  - name: Federated Edge Observability Static Inventory
+    inventory: Federated Edge Observability Inventory
+    organization: Federated Edge Observability
+    source: scm
+    source_project: Federated Edge Observability Inventory
+    source_path: inventory
+    update_on_launch: true
+
+controller_credential_types:
+  - name: RHSMcredential
+    description: RHSM Credentials
+    kind: cloud
+    inputs:
+      fields:
+        - id: username
+          type: string
+          label: RHSM User name
+          secret: true
+        - id: password
+          type: string
+          label: RHSM password
+          secret: true
+      required:
+        - username
+        - password
+    injectors:
+      extra_vars:
+        rhsm_username: "{  { username }}"
+        rhsm_password: "{  { password }}"
+
+controller_templates:
+  - name: Demo Job Template
+    state: absent
+
+  - name: Ping Playbook
+    organization: Federated Edge Observability
+    project: Federated Edge Observability GitOps
+    job_type: run
+    playbook: playbooks/ping.yml
+    inventory: Edge Nodes
+    credentials:
+      - vm-private-key
+    execution_environment: Default execution environment
+
+  - name: OTEL Playbook
+    organization: Federated Edge Observability
+    project: Federated Edge Observability GitOps
+    job_type: run
+    playbook: playbooks/otel_playbook.yml
+    inventory: Edge Nodes
+    credentials:
+      - vm-private-key
+      - rhsm_credential
+    execution_environment: Default execution environment
+
+controller_credential_input_sources:
+  - source_credential: Hashivault
+    target_credential: vm-private-key
+    input_field_name: username
+    metadata:
+      secret_backend: secret
+      secret_path: hub/vm-ssh
+      secret_key: username
+
+  - source_credential: Hashivault
+    target_credential: vm-private-key
+    input_field_name: ssh_key_data
+    metadata:
+      secret_backend: secret
+      secret_path: hub/vm-ssh
+      secret_key: privatekey
+
+  - source_credential: Hashivault
+    target_credential: rhsm_credential
+    input_field_name: username
+    metadata:
+      secret_backend: secret
+      secret_path: hub/rhsm
+      secret_key: username
+
+  - source_credential: Hashivault
+    target_credential: rhsm_credential
+    input_field_name: password
+    metadata:
+      secret_backend: secret
+      secret_path: hub/rhsm
+      secret_key: password
+
+controller_credentials:
+  - name: Hashivault
+    description: In-Cluster Hashicorp vault lookup
+    organization: Federated Edge Observability
+    credential_type: HashiCorp Vault Secret Lookup
+    inputs:
+      url: "{{ secrets['vault_url'] }}"
+      token: "{{ secrets['vault_root_token'] }}"
+      cacert: "{{ secrets['vault_ca'] }}"
+      api_version: v2
+
+  - name: rhsm_credential
+    description: RHSM credential registering RHEL VMs
+    organization: Federated Edge Observability
+    credential_type: RHSMcredential
+
+  - name: vm-private-key
+    description: Machine credential for virtual machines
+    organization: Federated Edge Observability
+    credential_type: Machine
