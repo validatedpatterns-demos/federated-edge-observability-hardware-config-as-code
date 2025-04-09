@@ -271,3 +271,8 @@ controller_instances:
     peers_from_control_nodes: true
     enabled: true
     managed_by_policy: false
+
+controller_instance_groups:
+  - name: On-Prem
+    instances:
+      - "{{ helm_values.automation_mesh_node | default('rhel9-vpn-001.edge-gitops-vms.svc') }}"
