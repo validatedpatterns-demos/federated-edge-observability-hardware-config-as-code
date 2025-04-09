@@ -270,4 +270,4 @@ controller_instances:
     listener_port: 27199
     peers_from_control_nodes: true
     enabled: true
-    managed_by_policy: true
+    managed_by_policy: false
